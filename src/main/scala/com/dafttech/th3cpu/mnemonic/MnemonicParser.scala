@@ -2,12 +2,12 @@ package com.dafttech.th3cpu.mnemonic
 
 import java.nio.file.{Files, Paths}
 
-import scala.util.parsing.combinator.JavaTokenParsers
+import org.lolhens.parser.ParserUtils
 
 /**
  * Created by LolHens on 25.07.2015.
  */
-object MnemonicParser extends JavaTokenParsers {
+object MnemonicParser extends ParserUtils {
   def main(args: Array[String]): Unit = {
     val inName = args.mkString(" ")
     val outName = (if (inName.contains(".")) inName.take(inName.lastIndexOf(".")) else inName) + ".bin"
@@ -25,13 +25,13 @@ object MnemonicParser extends JavaTokenParsers {
     case move ~ Some(branch) => List((move | branch).toByte)
   } | branch ^^ (List(_))
 
-  private def move: Parser[Byte] = ("mv" | "mov" | "move") ~> (("(" ~> writeRegister ~ "," ~ readRegister <~ ")") | (writeRegister ~ "," ~ readRegister)) ^^ {
+  private def move: Parser[Byte] = ("mv" | "mov" | "move") ~> optFrame("(", writeRegister ~ "," ~ readRegister, ")") ^^ {
     case target ~ _ ~ source => ((target << 3) | source).toByte
   }
 
   private val paramRegister = 4
 
-  private def const: Parser[List[Byte]] = "const" ~> (("(" ~> writeRegister ~ "," ~ wholeNumber <~ ")") | (writeRegister ~ "," ~ wholeNumber)) ^^ {
+  private def const: Parser[List[Byte]] = "const" ~> optFrame("(", writeRegister ~ "," ~ wholeNumber, ")") ^^ {
     case target ~ _ ~ const => List(((target << 3) | paramRegister).toByte, const.toByte)
   }
 
@@ -46,7 +46,7 @@ object MnemonicParser extends JavaTokenParsers {
   })
 
   private def writeRegister: Parser[Byte] = (
-    wholeNumber |
+    byteType |
       "gpr0" |
       "gpr1" |
       "gpr2" |
@@ -56,6 +56,7 @@ object MnemonicParser extends JavaTokenParsers {
       "cs" |
       ("mem_bus" | "membus")
     ) ^^ {
+    case index: Byte => index
     case "gpr0" => 0
     case "gpr1" => 1
     case "gpr2" => 2
@@ -64,23 +65,22 @@ object MnemonicParser extends JavaTokenParsers {
     case "ptr" => 5
     case "cs" => 6
     case "mem_bus" | "membus" => 7
-    case string: String => string.toByte
   }
 
 
   private def readRegister: Parser[Byte] = (
-    wholeNumber |
+    byteType |
       "gpr0" |
       "gpr1" |
       "gpr2" |
       "gpr3" |
       ("mem_bus" | "membus")
     ) ^^ {
+    case index: Byte => index
     case "gpr0" => 0
     case "gpr1" => 1
     case "gpr2" => 2
     case "gpr3" => 3
     case "mem_bus" | "membus" => 7
-    case string: String => string.toByte
   }
 }

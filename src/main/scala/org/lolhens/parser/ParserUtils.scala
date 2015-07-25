@@ -26,8 +26,12 @@ class ParserUtils extends JavaTokenParsers {
 
   def floatType: Parser[Float] = floatingPointNumber ^^ (_.toFloat)
 
-  def boolean: Parser[Boolean] = ("true" | "false") ^^ {
+  def booleanType: Parser[Boolean] = ("true" | "false") ^^ {
     case "true" => true
     case "false" => false
   }
+
+  def stringType: Parser[String] = stringLiteral
+
+  def textType: Parser[String] = """([^"\p{Cntrl}\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*+""".r
 }

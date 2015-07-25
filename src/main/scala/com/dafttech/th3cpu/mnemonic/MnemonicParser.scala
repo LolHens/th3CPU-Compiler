@@ -1,29 +1,38 @@
 package com.dafttech.th3cpu.mnemonic
 
-import java.nio.file.{Files, Paths}
-
 import org.lolhens.parser.ParserUtils
 
 /**
  * Created by LolHens on 25.07.2015.
  */
-object MnemonicParser extends ParserUtils {
-  def main(args: Array[String]): Unit = {
-    val inName = args.mkString(" ")
-    val outName = (if (inName.contains(".")) inName.take(inName.lastIndexOf(".")) else inName) + ".bin"
-
-    Files.write(Paths.get(outName), parseAll(instructions, Files.newBufferedReader(Paths.get(inName))).get.toArray)
-  }
+class MnemonicParser extends ParserUtils {
+  var addr: Byte = 0
+  var labels = Map[String, Byte]()
 
   def instructions: Parser[List[Byte]] = rep(instruction) ^^ (_.flatten)
 
   def instruction: Parser[List[Byte]] = const ~ opt(branch) ^^ {
-    case const ~ None => const
-    case const ~ Some(branch) => List((const(0) | branch).toByte, const(1))
+    case const ~ None =>
+      addr += 2
+      const
+    case const ~ Some(branch) =>
+      addr += 2
+      List((const(0) | branch).toByte, const(1))
   } | move ~ opt(branch) ^^ {
-    case move ~ None => List(move)
-    case move ~ Some(branch) => List((move | branch).toByte)
-  } | branch ^^ (List(_))
+    case move ~ None =>
+      addr += 1
+      List(move)
+    case move ~ Some(branch) =>
+      addr += 1
+      List((move | branch).toByte)
+  } | branch ^^ ((insn) => {
+    addr += 1
+    List(insn)
+  }) | label ^^ ((label) => {
+    labels += label -> addr
+    List()
+  })
+
 
   private def move: Parser[Byte] = ("mv" | "mov" | "move") ~> optFrame("(", writeRegister ~ "," ~ readRegister, ")") ^^ {
     case target ~ _ ~ source => ((target << 3) | source).toByte
@@ -31,8 +40,9 @@ object MnemonicParser extends ParserUtils {
 
   private val paramRegister = 4
 
-  private def const: Parser[List[Byte]] = "const" ~> optFrame("(", writeRegister ~ "," ~ wholeNumber, ")") ^^ {
-    case target ~ _ ~ const => List(((target << 3) | paramRegister).toByte, const.toByte)
+  private def const: Parser[List[Byte]] = "const" ~> optFrame("(", writeRegister ~ "," ~ (byteType | textType), ")") ^^ {
+    case target ~ _ ~ (const: Byte) => List(((target << 3) | paramRegister).toByte, const)
+    case target ~ _ ~ (label: String) => List(((target << 3) | paramRegister).toByte, labels(label))
   }
 
   private def branch: Parser[Byte] = (("jmp" | "jump") | "breq" | "brne") ^^ ((jmp) => {
@@ -44,6 +54,8 @@ object MnemonicParser extends ParserUtils {
     }
     (byte << 6).toByte
   })
+
+  private def label: Parser[String] = "label" ~> textType
 
   private def writeRegister: Parser[Byte] = (
     byteType |

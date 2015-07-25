@@ -14,7 +14,7 @@ class MnemonicParser extends JavaTokenParsers {
   } | move ~ opt(branch) ^^ {
     case move ~ None => List(move)
     case move ~ Some(branch) => List((move | branch).toByte)
-  }
+  } | branch ^^ (List(_))
 
   def move: Parser[Byte] = ("mv" | "mov" | "move") ~> (("(" ~> writeRegister ~ "," ~ readRegister <~ ")") | (writeRegister ~ "," ~ readRegister)) ^^ {
     case target ~ _ ~ source => ((target << 3) | source).toByte

@@ -14,6 +14,7 @@ repositories {
 
 dependencies {
     compile([group: 'org.scala-lang', name: 'scala-library', version: version_scala],
+            [group: 'org.scala-lang.modules', name: 'scala-parser-combinators_2.11', version: version_scala_parser_combinators],
             [group: 'com.typesafe.akka', name: 'akka-actor_2.11', version: version_akka])
 }
 

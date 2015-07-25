@@ -1,11 +1,20 @@
 package com.dafttech.th3cpu.mnemonic
 
+import java.nio.file.{Files, Paths}
+
 import scala.util.parsing.combinator.JavaTokenParsers
 
 /**
  * Created by LolHens on 25.07.2015.
  */
-class MnemonicParser extends JavaTokenParsers {
+object MnemonicParser extends JavaTokenParsers {
+  def main(args: Array[String]): Unit = {
+    val inName = args.mkString(" ")
+    val outName = (if (inName.contains(".")) inName.take(inName.lastIndexOf(".")) else inName) + ".bin"
+
+    Files.write(Paths.get(outName), parseAll(instructions, Files.newBufferedReader(Paths.get(inName))).get.toArray)
+  }
+
   def instructions: Parser[List[Byte]] = rep(instruction) ^^ (_.flatten)
 
   def instruction: Parser[List[Byte]] = const ~ opt(branch) ^^ {
@@ -16,17 +25,17 @@ class MnemonicParser extends JavaTokenParsers {
     case move ~ Some(branch) => List((move | branch).toByte)
   } | branch ^^ (List(_))
 
-  def move: Parser[Byte] = ("mv" | "mov" | "move") ~> (("(" ~> writeRegister ~ "," ~ readRegister <~ ")") | (writeRegister ~ "," ~ readRegister)) ^^ {
+  private def move: Parser[Byte] = ("mv" | "mov" | "move") ~> (("(" ~> writeRegister ~ "," ~ readRegister <~ ")") | (writeRegister ~ "," ~ readRegister)) ^^ {
     case target ~ _ ~ source => ((target << 3) | source).toByte
   }
 
   private val paramRegister = 4
 
-  def const: Parser[List[Byte]] = "const" ~> (("(" ~> writeRegister ~ "," ~ wholeNumber <~ ")") | (writeRegister ~ "," ~ wholeNumber)) ^^ {
+  private def const: Parser[List[Byte]] = "const" ~> (("(" ~> writeRegister ~ "," ~ wholeNumber <~ ")") | (writeRegister ~ "," ~ wholeNumber)) ^^ {
     case target ~ _ ~ const => List(((target << 3) | paramRegister).toByte, const.toByte)
   }
 
-  def branch: Parser[Byte] = (("jmp" | "jump") | "breq" | "brne") ^^ ((jmp) => {
+  private def branch: Parser[Byte] = (("jmp" | "jump") | "breq" | "brne") ^^ ((jmp) => {
     val byte = jmp match {
       case "jmp" | "jump" => 1
       case "breq" => 2
@@ -36,7 +45,7 @@ class MnemonicParser extends JavaTokenParsers {
     (byte << 6).toByte
   })
 
-  def writeRegister: Parser[Byte] = (
+  private def writeRegister: Parser[Byte] = (
     wholeNumber |
       "gpr0" |
       "gpr1" |
@@ -59,7 +68,7 @@ class MnemonicParser extends JavaTokenParsers {
   }
 
 
-  def readRegister: Parser[Byte] = (
+  private def readRegister: Parser[Byte] = (
     wholeNumber |
       "gpr0" |
       "gpr1" |

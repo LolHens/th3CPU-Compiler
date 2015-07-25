@@ -8,6 +8,12 @@ import scala.util.parsing.combinator.JavaTokenParsers
 class ParserUtils extends JavaTokenParsers {
   def optFrame[T](pre: Parser[Any], main: Parser[T], post: Parser[Any]): Parser[T] = pre ~> main <~ post | main
 
+  // TODO
+  def flatten(compOpt: Parser[~[Any, Option[Any]]]): Parser[Any] = compOpt ^^ {
+    case a ~ None => a
+    case a ~ Some(b) => new ~(a, b)
+  }
+
   def longType: Parser[Long] = wholeNumber ^^ (_.toLong)
 
   def intType: Parser[Int] = wholeNumber ^^ (_.toInt)

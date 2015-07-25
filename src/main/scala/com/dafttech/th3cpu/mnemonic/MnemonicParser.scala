@@ -26,16 +26,15 @@ class MnemonicParser extends JavaTokenParsers {
     case target ~ _ ~ const => List(((target << 3) | paramRegister).toByte, const.toByte)
   }
 
-  def branch: Parser[Byte] = (("jmp" | "jump") | "breq" | "brne") ^^ {
-    case jmp =>
-      val byte = jmp match {
-        case "jmp" | "jump" => 1
-        case "breq" => 2
-        case "brne" => 3
-        case _ => 0
-      }
-      (byte << 6).toByte
-  }
+  def branch: Parser[Byte] = (("jmp" | "jump") | "breq" | "brne") ^^ ((jmp) => {
+    val byte = jmp match {
+      case "jmp" | "jump" => 1
+      case "breq" => 2
+      case "brne" => 3
+      case _ => 0
+    }
+    (byte << 6).toByte
+  })
 
   def writeRegister: Parser[Byte] = (
     wholeNumber |

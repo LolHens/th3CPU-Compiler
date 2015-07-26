@@ -8,23 +8,31 @@ import scala.util.parsing.combinator.JavaTokenParsers
 class ParserUtils extends JavaTokenParsers {
   def optFrame[T](pre: Parser[Any], main: Parser[T], post: Parser[Any]): Parser[T] = pre ~> main <~ post | main
 
-  // TODO
-  def flatten(compOpt: Parser[~[Any, Option[Any]]]): Parser[Any] = compOpt ^^ {
+  /*def flatten(compOpt: Parser[~[Any, Option[Any]]]): Parser[Any] = compOpt ^^ {
     case a ~ None => a
     case a ~ Some(b) => new ~(a, b)
-  }
+  }*/
 
-  def binaryNumber: Parser[String] = """([0-1]*)""".r
+  /*def toLowerCase[T](parser: Parser[T]): Parser[T] = new Parser[T] {
+    def apply(in: Input) = in match {
+      case string: String => parser(string.toLowerCase().asInstanceOf[Input])
+      case other => parser(other)
+    }
+  }*/
 
-  def hexNumber: Parser[String] = """([0-9a-fA-F]*)""".r
+  def binaryNumber: Parser[String] = """[01]+""".r
 
-  def longType: Parser[Long] = wholeNumber ^^ (_.toLong)
+  def hexNumber: Parser[String] = """[0-9a-fA-F]+""".r
 
-  def intType: Parser[Int] = wholeNumber ^^ (_.toInt)
+  def intType: Parser[Int] = (
+    "0b" ~> binaryNumber ^^ (Integer.parseInt(_, 2))
+      | "0x" ~> hexNumber ^^ ((hexNum) => Integer.parseInt("0" + hexNum, 16))
+      | wholeNumber ^^ (_.toInt)
+    )
 
-  def shortType: Parser[Short] = wholeNumber ^^ (_.toShort)
+  def shortType: Parser[Short] = intType ^^ (_.toShort)
 
-  def byteType: Parser[Byte] = wholeNumber ^^ (_.toByte)
+  def byteType: Parser[Byte] = intType ^^ (_.toByte)
 
   def doubleType: Parser[Double] = floatingPointNumber ^^ (_.toDouble)
 
@@ -37,7 +45,7 @@ class ParserUtils extends JavaTokenParsers {
 
   def stringType: Parser[String] = stringLiteral
 
-  def textType: Parser[String] = """([^"\p{Cntrl}\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*+""".r
+  //def textType: Parser[String] = """([^"\p{Cntrl}\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*+""".r
 
-  def wordType: Parser[String] = """[a-z]+""".r
+  def wordType: Parser[String] = """[0-9a-zA-Z]+""".r
 }

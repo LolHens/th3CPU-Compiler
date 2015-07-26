@@ -31,11 +31,13 @@ class MnemonicParser extends ParserUtils {
   }) | nop ^^ ((byte) => {
     addr += 1
     List(byte)
+  }) | byte ^^ ((byte) => {
+    addr += 1
+    List(byte)
   }) | label ^^ ((label) => {
     labels += label -> addr.toByte
     List()
   })
-
 
   private def move: Parser[Byte] = ("mv" | "mov" | "move") ~> optFrame("(", writeRegister ~ "," ~ readRegister, ")") ^^ {
     case target ~ _ ~ source => ((target << 3) | source).toByte
@@ -59,6 +61,8 @@ class MnemonicParser extends ParserUtils {
   })
 
   private def nop: Parser[Byte] = "nop" ^^ ((_) => 0)
+
+  private def byte: Parser[Byte] = "byte" ~> optFrame("(", byteType, ")")
 
   private def label: Parser[String] = "label" ~> optFrame("(", textType, ")")
 

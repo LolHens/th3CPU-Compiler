@@ -6,7 +6,7 @@ import org.lolhens.parser.ParserUtils
  * Created by LolHens on 25.07.2015.
  */
 class MnemonicParser extends ParserUtils {
-  var addr: Byte = 0
+  var addr: Int = 0
   var labels = Map[String, Byte]()
 
   def instructions: Parser[List[Byte]] = rep(instruction) ^^ (_.flatten)
@@ -29,7 +29,7 @@ class MnemonicParser extends ParserUtils {
     addr += 1
     List(insn)
   }) | label ^^ ((label) => {
-    labels += label -> addr
+    labels += label -> addr.toByte
     List()
   })
 

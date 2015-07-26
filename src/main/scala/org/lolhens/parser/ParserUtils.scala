@@ -14,6 +14,10 @@ class ParserUtils extends JavaTokenParsers {
     case a ~ Some(b) => new ~(a, b)
   }
 
+  def binaryNumber: Parser[String] = """([0-1]*)""".r
+
+  def hexNumber: Parser[String] = """([0-9a-fA-F]*)""".r
+
   def longType: Parser[Long] = wholeNumber ^^ (_.toLong)
 
   def intType: Parser[Int] = wholeNumber ^^ (_.toInt)

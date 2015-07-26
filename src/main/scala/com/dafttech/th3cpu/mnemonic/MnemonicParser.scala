@@ -45,7 +45,7 @@ class MnemonicParser extends ParserUtils {
 
   private val paramRegister = 4
 
-  private def const: Parser[List[Byte]] = "const" ~> optFrame("(", writeRegister ~ opt(",") ~ (byteType | wordType), ")") ^^ {
+  private def const: Parser[List[Byte]] = "const" ~> optFrame("(", writeRegister ~ opt(",") ~ (byteType2 | wordType), ")") ^^ {
     case target ~ _ ~ (const: Byte) => List(((target << 3) | paramRegister).toByte, const)
     case target ~ _ ~ (label: String) => List(((target << 3) | paramRegister).toByte, labels(label))
   }
@@ -62,12 +62,12 @@ class MnemonicParser extends ParserUtils {
 
   private def nop: Parser[Byte] = "nop" ^^ ((_) => 0)
 
-  private def byte: Parser[Byte] = "byte" ~> optFrame("(", byteType, ")")
+  private def byte: Parser[Byte] = "byte" ~> optFrame("(", byteType2, ")")
 
   private def label: Parser[String] = "label" ~> optFrame("(", wordType, ")")
 
   private def writeRegister: Parser[Byte] = (
-    byteType |
+    byteType2 |
       "gpr0" |
       "gpr1" |
       "gpr2" |
@@ -90,7 +90,7 @@ class MnemonicParser extends ParserUtils {
 
 
   private def readRegister: Parser[Byte] = (
-    byteType |
+    byteType2 |
       "gpr0" |
       "gpr1" |
       "gpr2" |
@@ -104,4 +104,8 @@ class MnemonicParser extends ParserUtils {
     case "gpr3" => 3
     case "mem_bus" | "membus" => 7
   }
+
+  private def byteType2 = intType2 ^^ (_.toByte)
+
+  private def intType2 = "0b" ~> binaryNumber ^^ (Integer.parseInt(_, 2)) | "0x" ~> hexNumber ^^ ((hexNum) => Integer.parseInt("0" + hexNum, 16)) | intType
 }

@@ -28,6 +28,9 @@ class MnemonicParser extends ParserUtils {
   } | branch ^^ ((insn) => {
     addr += 1
     List(insn)
+  }) | nop ^^ ((byte) => {
+    addr += 1
+    List(byte)
   }) | label ^^ ((label) => {
     labels += label -> addr.toByte
     List()
@@ -54,6 +57,8 @@ class MnemonicParser extends ParserUtils {
     }
     (byte << 6).toByte
   })
+
+  private def nop: Parser[Byte] = "nop" ^^ ((_) => 0)
 
   private def label: Parser[String] = "label" ~> textType
 

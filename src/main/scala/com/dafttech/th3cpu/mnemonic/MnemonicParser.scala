@@ -60,7 +60,7 @@ class MnemonicParser extends ParserUtils {
 
   private def nop: Parser[Byte] = "nop" ^^ ((_) => 0)
 
-  private def label: Parser[String] = "label" ~> textType
+  private def label: Parser[String] = "label" ~> optFrame("(", textType, ")")
 
   private def writeRegister: Parser[Byte] = (
     byteType |

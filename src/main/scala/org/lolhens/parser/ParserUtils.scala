@@ -34,4 +34,6 @@ class ParserUtils extends JavaTokenParsers {
   def stringType: Parser[String] = stringLiteral
 
   def textType: Parser[String] = """([^"\p{Cntrl}\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*+""".r
+
+  def wordType: Parser[String] = """[a-z]+""".r
 }

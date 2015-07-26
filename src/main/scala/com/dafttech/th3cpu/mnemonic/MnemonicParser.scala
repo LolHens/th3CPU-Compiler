@@ -39,13 +39,13 @@ class MnemonicParser extends ParserUtils {
     List()
   })
 
-  private def move: Parser[Byte] = ("mv" | "mov" | "move") ~> optFrame("(", writeRegister ~ "," ~ readRegister, ")") ^^ {
+  private def move: Parser[Byte] = ("mv" | "mov" | "move") ~> optFrame("(", writeRegister ~ opt(",") ~ readRegister, ")") ^^ {
     case target ~ _ ~ source => ((target << 3) | source).toByte
   }
 
   private val paramRegister = 4
 
-  private def const: Parser[List[Byte]] = "const" ~> optFrame("(", writeRegister ~ "," ~ (byteType | textType), ")") ^^ {
+  private def const: Parser[List[Byte]] = "const" ~> optFrame("(", writeRegister ~ opt(",") ~ (byteType | wordType), ")") ^^ {
     case target ~ _ ~ (const: Byte) => List(((target << 3) | paramRegister).toByte, const)
     case target ~ _ ~ (label: String) => List(((target << 3) | paramRegister).toByte, labels(label))
   }
@@ -64,7 +64,7 @@ class MnemonicParser extends ParserUtils {
 
   private def byte: Parser[Byte] = "byte" ~> optFrame("(", byteType, ")")
 
-  private def label: Parser[String] = "label" ~> optFrame("(", textType, ")")
+  private def label: Parser[String] = "label" ~> optFrame("(", wordType, ")")
 
   private def writeRegister: Parser[Byte] = (
     byteType |

@@ -35,22 +35,25 @@ class MnemonicParser extends ParserUtils {
     addr += 1
     List(byte)
   }) | label ^^ ((label) => {
+    println("label: " + label)
     labels += label -> addr.toByte
+    List()
+  }) | comment ^^ ((_) => {
     List()
   })
 
-  private def move: Parser[Byte] = ("mv" | "mov" | "move") ~> optFrame("(", writeRegister ~ opt(",") ~ readRegister, ")") ^^ {
+  private def move: Parser[Byte] = ("mv" | "mov" | "move") ~> optFrame("(", writeRegister ~ opt(",") ~ readRegister, ")") <~ opt(comment) ^^ {
     case target ~ _ ~ source => ((target << 3) | source).toByte
   }
 
   private val paramRegister = 4
 
-  private def const: Parser[List[Byte]] = "const" ~> optFrame("(", writeRegister ~ opt(",") ~ (byteType | paramTextType), ")") ^^ {
+  private def const: Parser[List[Byte]] = "const" ~> optFrame("(", writeRegister ~ opt(",") ~ (byteType | paramTextType), ")") <~ opt(comment) ^^ {
     case target ~ _ ~ (const: Byte) => List(((target << 3) | paramRegister).toByte, const)
     case target ~ _ ~ (label: String) => List(((target << 3) | paramRegister).toByte, labels(label))
   }
 
-  private def branch: Parser[Byte] = (("jmp" | "jump") | "breq" | "brne") ^^ ((jmp) => {
+  private def branch: Parser[Byte] = (("jmp" | "jump") | "breq" | "brne") <~ opt(comment) ^^ ((jmp) => {
     val byte = jmp match {
       case "jmp" | "jump" => 1
       case "breq" => 2
@@ -60,11 +63,13 @@ class MnemonicParser extends ParserUtils {
     (byte << 6).toByte
   })
 
-  private def nop: Parser[Byte] = "nop" ^^ ((_) => 0)
+  private def nop: Parser[Byte] = "nop" <~ opt(comment) ^^ ((_) => 0)
 
-  private def byte: Parser[Byte] = "byte" ~> optFrame("(", byteType, ")")
+  private def byte: Parser[Byte] = "byte" ~> optFrame("(", byteType, ")") <~ opt(comment)
 
-  private def label: Parser[String] = "label" ~> optFrame("(", paramTextType, ")")
+  private def label: Parser[String] = "label" ~> optFrame("(", paramTextType, ")") <~ opt(comment)
+
+  private def comment: Parser[Unit] = ((";" | "//") ~ textType("", "")) ^^ ((_) => ())
 
   private def writeRegister: Parser[Byte] = (
     byteType |
@@ -104,4 +109,6 @@ class MnemonicParser extends ParserUtils {
     case "gpr3" => 3
     case "mem_bus" | "membus" => 7
   }
+
+  def paramTextType = textType("(", List(")", ",", " ", ";", "//"))
 }

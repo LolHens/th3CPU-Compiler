@@ -47,13 +47,16 @@ class ParserUtils extends JavaTokenParsers {
 
   def stringType: Parser[String] = stringLiteral
 
-  def textType(pre: List[String], post: List[String]): Parser[String] = s"""[^${pre.map(quote).mkString("")}]([^${post.map(quote).mkString("")}])+""".r
-
-  def paramTextType = textType("(", List(")", ","))
-
   def wordType: Parser[String] = """(\w)+""".r
 
-  def quote(string: String) = Pattern.quote(string)
+  def textType(pre: List[String], post: List[String]): Parser[String] = s"${except(pre).getOrElse("")}(${except(post).getOrElse(".")})+".r
+
+  def except(list: List[String]): Option[String] = {
+    val except = list.map(quote).mkString("")
+    if (except == "") None else Some(s"[^$except]")
+  }
+
+  def quote(string: String) = if (string == "") "" else Pattern.quote(string)
 
   implicit def stringToStringList(string: String): List[String] = List(string)
 }

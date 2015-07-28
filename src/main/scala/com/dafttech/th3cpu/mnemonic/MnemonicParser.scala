@@ -35,7 +35,6 @@ class MnemonicParser extends ParserUtils {
     addr += 1
     List(byte)
   }) | label ^^ ((label) => {
-    println("label: " + label)
     labels += label -> addr.toByte
     List()
   }) | comment ^^ ((_) => {

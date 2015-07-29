@@ -22,9 +22,9 @@ class ParserUtils extends JavaTokenParsers {
     }
   }*/
 
-  def binaryNumber: Parser[String] = """[01]+""".r
+  def binaryNumber: Parser[String] = "[01]+".r
 
-  def hexNumber: Parser[String] = """[0-9a-fA-F]+""".r
+  def hexNumber: Parser[String] = "[0-9a-fA-F]+".r
 
   def intType: Parser[Int] = (
     "0b" ~> binaryNumber ^^ (Integer.parseInt(_, 2))
@@ -49,7 +49,7 @@ class ParserUtils extends JavaTokenParsers {
 
   def wordType: Parser[String] = """(\w)+""".r
 
-  def textType(pre: List[String], post: List[String]): Parser[String] = s"${except(pre).getOrElse("")}(${except(post).getOrElse(".")})+".r
+  def textType(pre: List[String], post: List[String]): Parser[String] = s"${except(pre).getOrElse("")}${except(post).getOrElse(".")}+".r
 
   protected def except(list: List[String]): Option[String] = {
     val except = list.map(quote).mkString("")

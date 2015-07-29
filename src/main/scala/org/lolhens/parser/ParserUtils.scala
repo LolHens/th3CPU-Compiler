@@ -51,12 +51,12 @@ class ParserUtils extends JavaTokenParsers {
 
   def textType(pre: List[String], post: List[String]): Parser[String] = s"${except(pre).getOrElse("")}(${except(post).getOrElse(".")})+".r
 
-  def except(list: List[String]): Option[String] = {
+  protected def except(list: List[String]): Option[String] = {
     val except = list.map(quote).mkString("")
     if (except == "") None else Some(s"[^$except]")
   }
 
-  def quote(string: String) = if (string == "") "" else Pattern.quote(string)
+  protected def quote(string: String) = if (string == "") "" else Pattern.quote(string)
 
   implicit def stringToStringList(string: String): List[String] = List(string)
 }

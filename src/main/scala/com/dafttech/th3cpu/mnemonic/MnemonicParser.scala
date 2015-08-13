@@ -12,10 +12,10 @@ class MnemonicParser extends ParserUtils {
   var addr: Int = 0
   var labels = Map[String, Label]()
 
-  def insnParser: Parser[List[Byte]] = insertLabels
+  def instructions: Parser[List[Byte]] = rep(instruction) ^^ ((insnLists) => {
+    val insnList = insnLists.flatten
 
-  def insertLabels: Parser[List[Byte]] = instructions ^^ ((insns) => {
-    val buffer = insns.to[ListBuffer]
+    val buffer = insnList.to[ListBuffer]
 
     for ((name, label) <- labels;
          occurence <- label.occurences)
@@ -23,8 +23,6 @@ class MnemonicParser extends ParserUtils {
 
     buffer.toList
   })
-
-  def instructions: Parser[List[Byte]] = rep(instruction) ^^ (_.flatten)
 
   def instruction: Parser[List[Byte]] = const ~ opt(branch) ^^ {
     case const ~ optBranch =>

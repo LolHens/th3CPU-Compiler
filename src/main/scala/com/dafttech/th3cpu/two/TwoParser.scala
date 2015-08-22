@@ -112,11 +112,6 @@ class TwoParser extends ParserUtils {
     s"const(ptr, ${addrStackSize})",
     "mov(gpr3, mem_bus)",
 
-    // read from stack
-    "mov(ds, gpr2)",
-    "mov(ptr,  gpr3)",
-    s"mov($register, mem_bus)",
-
     // decrease stack size (alu)
     "const(ds, 0b00100000)",
     "mov(mem_bus, gpr3)",
@@ -124,6 +119,11 @@ class TwoParser extends ParserUtils {
     "const(mem_bus, 1)",
     "const(ds, 0b00111000)",
     "mov(gpr3, mem_bus)",
+
+    // read from stack
+    "mov(ds, gpr2)",
+    "mov(ptr,  gpr3)",
+    s"mov($register, mem_bus)",
 
     // write stack size
     s"const(ds, ${addrStackSize - 1})",
@@ -143,13 +143,18 @@ class TwoParser extends ParserUtils {
     s"const(ptr, ${addrStackSize})",
     "mov(gpr3, mem_bus)",
 
+    // increase stack size (alu)
+    "const(ds, 0b00100000)",
+    "mov(mem_bus, gpr3)",
+    "const(ds, 0b00101000)",
+    "const(mem_bus, 1)",
+    "const(ds, 0b00110000)",
+    "mov(gpr3, mem_bus)",
+
     // write to stack
     "mov(ds, gpr2)",
     "mov(ptr,  gpr3)",
     s"mov(mem_bus, $register)",
-
-    // increase stack size (alu)
-    "",
 
     // write stack size
     s"const(ds, ${addrStackSize - 1})",

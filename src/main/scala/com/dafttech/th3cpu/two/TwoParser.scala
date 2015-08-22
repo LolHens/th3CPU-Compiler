@@ -101,15 +101,63 @@ class TwoParser extends ParserUtils {
     buffer.toList
   }
 
+  private val addrStackSize = 0xFFFF
+
   private def pop(register: String) = List(
+    // get stack size
+    s"const(ds, 0)",
+    s"const(ptr, ${addrStackSize - 1})",
+    "mov(gpr2, mem_bus)",
+    s"const(ds, 0)",
+    s"const(ptr, ${addrStackSize})",
+    "mov(gpr3, mem_bus)",
+
+    // read from stack
     "mov(ds, gpr2)",
     "mov(ptr,  gpr3)",
+    s"mov($register, mem_bus)",
 
-    ""
+    // decrease stack size (alu)
+    "const(ds, 0b00100000)",
+    "mov(mem_bus, gpr3)",
+    "const(ds, 0b00101000)",
+    "const(mem_bus, 1)",
+    "const(ds, 0b00111000)",
+    "mov(gpr3, mem_bus)",
+
+    // write stack size
+    s"const(ds, ${addrStackSize - 1})",
+    s"const(ptr, 0)",
+    "mov(mem_bus, gpr2)",
+    s"const(ds, ${addrStackSize})",
+    s"const(ptr, 0)",
+    "mov(mem_bus, gpr3)"
   )
 
-  private def push = List(
-    ""
+  private def push(register: String) = List(
+    // get stack size
+    s"const(ds, 0)",
+    s"const(ptr, ${addrStackSize - 1})",
+    "mov(gpr2, mem_bus)",
+    s"const(ds, 0)",
+    s"const(ptr, ${addrStackSize})",
+    "mov(gpr3, mem_bus)",
+
+    // write to stack
+    "mov(ds, gpr2)",
+    "mov(ptr,  gpr3)",
+    s"mov(mem_bus, $register)",
+
+    // increase stack size (alu)
+    "",
+
+    // write stack size
+    s"const(ds, ${addrStackSize - 1})",
+    s"const(ptr, 0)",
+    "mov(mem_bus, gpr2)",
+    s"const(ds, ${addrStackSize})",
+    s"const(ptr, 0)",
+    "mov(mem_bus, gpr3)"
   )
 
   private def valueExpr: Parser[List[String]] = ???

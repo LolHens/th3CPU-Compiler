@@ -112,10 +112,10 @@ class MnemonicParser extends ParserUtils {
     case "gpr1" => 1
     case "gpr2" => 2
     case "gpr3" => 3
-    case "ds" => 4
+    case "ds" => 4 // peripheral select
     case "ptr" => 5
     case "cs" => 6
-    case "mem_bus" | "membus" => 7
+    case "mem_bus" | "membus" => 7 // peripheral data
   }
 
 

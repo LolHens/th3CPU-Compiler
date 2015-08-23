@@ -12,9 +12,10 @@ class TwoParser extends ParserUtils {
 
   def instructions: Parser[List[String]] = rep(instruction) ^^ (_.flatten)
 
-  def instruction: Parser[List[String]] = expr <~ comment | comment ^^ ((_) => List())
+  def instruction: Parser[List[String]] = expr <~ opt(comment) | comment ^^ ((_) => List())
 
-  def expr: Parser[List[String]] = optFrame("(", unitExprs | ifExpr | valueExpr | op1Expr | op2Expr | constExpr, ")")
+  // TODO: Loops
+  def expr: Parser[List[String]] = optFrame("(", unitExprs | ifExpr | op1Expr | op2Expr | constExpr, ")")
 
   /*
  val test = 5 + (if (3 > 1) (a + b) else (a + c))
@@ -65,8 +66,7 @@ class TwoParser extends ParserUtils {
       optElse match {
         case Some("else" ~ elseExpr) =>
           buffer ++= elseExpr
-        case None =>
-        case _ => // TODO: match not exhaustive
+        case _ =>
       }
 
       buffer += s"label(ifEnd$ifCount)"
@@ -76,7 +76,7 @@ class TwoParser extends ParserUtils {
       buffer.toList
   }
 
-  private def constExpr: Parser[List[String]] = byteType ^^ ((byte) => List(s"const(gpr0, $byte)"))
+  private def constExpr: Parser[List[String]] = byteType ^^ ((byte) => push("", byte.toString))
 
   private def op1Expr: Parser[List[String]] = expr ~ ("*" | "/") ~ expr ^^ {
     case a ~ "*" ~ b => op(a, b, ???)
@@ -84,20 +84,29 @@ class TwoParser extends ParserUtils {
   }
 
   private def op2Expr: Parser[List[String]] = expr ~ ("+" | "-") ~ expr ^^ {
-    case a ~ "+" ~ b => op(a, b, ???)
-    case a ~ "-" ~ b => op(a, b, ???)
+    case a ~ "+" ~ b => op(a, b, "0b00110000")
+    case a ~ "-" ~ b => op(a, b, "0b00111000")
   }
 
-  private def op(a: List[String], b: List[String], opReg: Byte): List[String] = {
+  private def op(a: List[String], b: List[String], opReg: String): List[String] = {
     val buffer = ListBuffer[String]()
+
     buffer ++= a
+    buffer ++= b
+
+    buffer ++= pop("gpr1")
+    buffer ++= pop("gpr0")
+
     buffer += "const(ds, 0b00100000)"
     buffer += "mov(mem_bus, gpr0)"
-    buffer ++= b // TODO
     buffer += "const(ds, 0b00101000)"
-    buffer += "mov(mem_bus, gpr0)"
+    buffer += "mov(mem_bus, gpr1)"
+
     buffer += s"const(ds, $opReg)"
     buffer += "mov(gpr0, mem_bus)"
+
+    buffer ++= push("gpr0")
+
     buffer.toList
   }
 
@@ -134,42 +143,47 @@ class TwoParser extends ParserUtils {
     "mov(mem_bus, gpr3)"
   )
 
-  private def push(register: String) = List(
-    // get stack size
-    s"const(ds, 0)",
-    s"const(ptr, ${addrStackSize - 1})",
-    "mov(gpr2, mem_bus)",
-    s"const(ds, 0)",
-    s"const(ptr, ${addrStackSize})",
-    "mov(gpr3, mem_bus)",
+  private def push(register: String, const: String = null) = {
+    val toMemBus = if (const == null)
+      s"mov(mem_bus, $register)"
+    else
+      s"const(mem_bus, $const)"
 
-    // increase stack size (alu)
-    "const(ds, 0b00100000)",
-    "mov(mem_bus, gpr3)",
-    "const(ds, 0b00101000)",
-    "const(mem_bus, 1)",
-    "const(ds, 0b00110000)",
-    "mov(gpr3, mem_bus)",
+    List(
+      // get stack size
+      s"const(ds, 0)",
+      s"const(ptr, ${addrStackSize - 1})",
+      "mov(gpr2, mem_bus)",
+      s"const(ds, 0)",
+      s"const(ptr, ${addrStackSize})",
+      "mov(gpr3, mem_bus)",
 
-    // write to stack
-    "mov(ds, gpr2)",
-    "mov(ptr,  gpr3)",
-    s"mov(mem_bus, $register)",
+      // increase stack size (alu)
+      "const(ds, 0b00100000)",
+      "mov(mem_bus, gpr3)",
+      "const(ds, 0b00101000)",
+      "const(mem_bus, 1)",
+      "const(ds, 0b00110000)",
+      "mov(gpr3, mem_bus)",
 
-    // write stack size
-    s"const(ds, ${addrStackSize - 1})",
-    s"const(ptr, 0)",
-    "mov(mem_bus, gpr2)",
-    s"const(ds, ${addrStackSize})",
-    s"const(ptr, 0)",
-    "mov(mem_bus, gpr3)"
-  )
+      // write to stack
+      "mov(ds, gpr2)",
+      "mov(ptr,  gpr3)",
+      toMemBus,
 
-  private def valueExpr: Parser[List[String]] = ???
+      // write stack size
+      s"const(ds, ${addrStackSize - 1})",
+      s"const(ptr, 0)",
+      "mov(mem_bus, gpr2)",
+      s"const(ds, ${addrStackSize})",
+      s"const(ptr, 0)",
+      "mov(mem_bus, gpr3)"
+    )
+  }
 
   private def unitExprs: Parser[List[String]] = declUnit | defUnit
 
-  private def declUnit: Parser[List[String]] = varUnit
+  private def declUnit: Parser[List[String]] = varUnit | valUnit
 
   private def varUnit: Parser[List[String]] = "var" ~ variable ~ "=" ~ expr ^^ ???
 
